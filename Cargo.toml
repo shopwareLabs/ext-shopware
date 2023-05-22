@@ -9,6 +9,7 @@ crate-type = ["cdylib"]
 [dependencies]
 anyhow = "1.0.69"
 ext-php-rs = { version = "0.10", features = ["anyhow"]}
+zstd = "0.12.3"
 
 [profile.release]
 strip = "debuginfo"
