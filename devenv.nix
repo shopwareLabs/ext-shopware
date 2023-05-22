@@ -30,7 +30,7 @@
       else ".so"
     );
 in {
-  packages = [pkgs.git phpunwrapped];
+  packages = [phpunwrapped];
 
   env.LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
 
@@ -53,12 +53,14 @@ in {
           mbstring
           tokenizer
           readline
+          zlib
         ]);
       extraConfig = "memory_limit = -1";
     };
   };
 
-  scripts.repl.exec = "php -dextension=${extPhlash} -a $@";
+  scripts.phpr.exec = "php -dextension=${extPhlash}";
+  scripts.repl.exec = "phpr -a $@";
 
   pre-commit.hooks.shellcheck.enable = true;
   pre-commit.hooks.alejandra.enable = true;

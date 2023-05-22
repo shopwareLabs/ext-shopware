@@ -15,3 +15,5 @@ devenv.local.nix
 /Cargo.lock
 
 .pre-commit-config.yaml
+
+/examples/random.txt
