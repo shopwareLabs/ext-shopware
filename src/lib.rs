@@ -1,16 +1,17 @@
 use ext_php_rs::prelude::*;
 use ext_php_rs::types::Zval;
-use std::io::Write;
 use std::io::Read;
+use std::io::Write;
 use zstd::{stream::Encoder, Decoder};
 
-
 #[php_function(name = "Shopware\\Extension\\zstd_encode")]
-pub fn zstd_encode(name: &mut Zval) -> String {
-    let mut buf = String::new();
-    let mut encoder = Encoder::new(buf.as_bytes_mut(), 0).unwrap();
+pub fn zstd_encode(name: &mut Zval) -> Zval {
+    let mut buf: Vec<u8> = Vec::new();
+    let mut encoder = Encoder::new(buf, 0).unwrap();
     encoder.write_all(name.binary_slice().unwrap()).unwrap();
-    encoder.finish().unwrap()
+    let mut val = Zval::new();
+    val.set_binary(encoder.finish().unwrap());
+    val
 }
 
 #[php_function(name = "Shopware\\Extension\\zstd_decode")]
