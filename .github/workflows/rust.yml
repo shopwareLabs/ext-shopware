@@ -50,3 +50,45 @@ jobs:
         with:
           name: shopware-linux-amd64-${{ matrix.php-version }}
           path: shopware-linux-amd64-${{ matrix.php-version }}.so
+
+  macos_amd64:
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version:
+          - "8.1"
+          - "8.2"
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set up cargo cache
+        uses: actions/cache@v3
+        continue-on-error: false
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ matrix.php-version }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+
+      - name: Build
+        run: cargo build --release
+
+      - name: Rename
+        run: mv target/release/libext_sw.dylib shopware-macos-amd64-${{ matrix.php-version }}.dylib
+        
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: shopware-macos-amd64-${{ matrix.php-version }}
+          path: shopware-macos-amd64-${{ matrix.php-version }}.so
