@@ -113,7 +113,7 @@ jobs:
       - name: Make MacOS x64 tar
         run: |
           mkdir macos_amd64
-          cp artifacts/shopware-macos-amd64*/*.so macos_amd64
+          cp artifacts/shopware-macos-amd64*/*.dylib macos_amd64
           tar cf macos_amd64.tar.gz macos_amd64/*
 
       - name: Upload Artifact
