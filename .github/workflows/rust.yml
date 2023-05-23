@@ -39,7 +39,8 @@ jobs:
       - name: Build
         run: cargo build --release
         
-      - uses: actions/upload-artifact@v3
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
         with:
-          name: extension
+          name: ext-linux-${{ matrix.php-version }}
           path: target/release/libext_sw.so
