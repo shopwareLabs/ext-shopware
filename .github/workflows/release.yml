@@ -1,0 +1,42 @@
+name: Release
+
+on:
+  push:
+    tags: 
+      - "v*"
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    uses: "./.github/workflows/rust.yml"
+
+  release:
+    runs-on: ubuntu-latest
+    needs:
+      - build
+    steps:
+      - name: Download
+        uses: actions/download-artifact@v3
+        with:
+          path: artifacts
+
+      - name: Make Linux x64 tar
+        run: |
+          mkdir linux_amd64
+          cp artifacts/shopware-linux-amd64*/*.so linux_amd64
+          tar cf linux_amd64.tar.gz linux_amd64/*
+
+      - name: Make MacOS x64 tar
+        run: |
+          mkdir macos_amd64
+          cp artifacts/shopware-macos-amd64*/*.dylib macos_amd64
+          tar cf macos_amd64.tar.gz macos_amd64/*
+
+      - name: "Release 🚀"
+        uses: "softprops/action-gh-release@v1"
+        with:
+          files: artfacts/*tar.gz
+          generate_release_notes: true
+          fail_on_unmatched_files: true

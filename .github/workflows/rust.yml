@@ -92,39 +92,3 @@ jobs:
         with:
           name: shopware-macos-amd64-${{ matrix.php-version }}
           path: shopware-macos-amd64-${{ matrix.php-version }}.dylib
-
-  release:
-    runs-on: ubuntu-latest
-    needs:
-      - linux_amd64
-      - macos_amd64
-    steps:
-      - name: Download
-        uses: actions/download-artifact@v3
-        with:
-          path: artifacts
-
-      - name: Make Linux x64 tar
-        run: |
-          mkdir linux_amd64
-          cp artifacts/shopware-linux-amd64*/*.so linux_amd64
-          tar cf linux_amd64.tar.gz linux_amd64/*
-
-      - name: Make MacOS x64 tar
-        run: |
-          mkdir macos_amd64
-          cp artifacts/shopware-macos-amd64*/*.dylib macos_amd64
-          tar cf macos_amd64.tar.gz macos_amd64/*
-
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: linux_amd64.tar.gz
-          path: linux_amd64.tar.gz
-
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: macos_amd64.tar.gz
-          path: macos_amd64.tar.gz
-      
