@@ -104,14 +104,27 @@ jobs:
         with:
           path: artifacts
 
-      - name: Make Linux tar
+      - name: Make Linux x64 tar
         run: |
           mkdir linux_amd64
           cp artifacts/shopware-linux-amd64*/*.so linux_amd64
+          tar cf linux_amd64.tar.gz linux_amd64/*
+
+      - name: Make MacOS x64 tar
+        run: |
+          mkdir macos_amd64
+          cp artifacts/shopware-macos-amd64*/*.so macos_amd64
+          tar cf macos_amd64.tar.gz macos_amd64/*
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
-          name: linux-amd64
-          path: linux_amd64
+          name: linux_amd64.tar.gz
+          path: linux_amd64.tar.gz
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: macos_amd64.tar.gz
+          path: macos_amd64.tar.gz
       
