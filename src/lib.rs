@@ -1,27 +1,63 @@
+use anyhow::Result;
 use ext_php_rs::prelude::*;
 use ext_php_rs::types::Zval;
+use ext_php_rs::zend::ClassEntry;
 use std::io::Read;
 use std::io::Write;
 use zstd::{stream::Encoder, Decoder};
 
 #[php_function(name = "Shopware\\Extension\\zstd_encode")]
-pub fn zstd_encode(name: &mut Zval) -> Zval {
-    let mut encoder = Encoder::new(Vec::new(), 0).unwrap();
-    encoder.write_all(name.binary_slice().unwrap()).unwrap();
+pub fn zstd_encode(data: &mut Zval) -> PhpResult<Zval> {
+    if !data.is_string() {
+        return Err(invalid_argument_error(1, "string"));
+    }
+    let input_bytes = data
+        .binary_slice()
+        .expect("could not retrieve bytes of argument 1");
+
+    let val = zstd_encode_inner(input_bytes).map_err(|e| format!("Error encoding data: {}", e))?;
+    Ok(val)
+}
+
+fn zstd_encode_inner(data: &[u8]) -> Result<Zval> {
+    let mut encoder = Encoder::new(Vec::new(), 0)?;
+
+    encoder.write_all(data)?;
+
     let mut val = Zval::new();
-    val.set_binary(encoder.finish().unwrap());
-    val
+    val.set_binary(encoder.finish()?);
+
+    Ok(val)
 }
 
 #[php_function(name = "Shopware\\Extension\\zstd_decode")]
-pub fn zstd_decode(data: &mut Zval) -> Zval {
-    let mut decoder = Decoder::new(data.binary_slice().unwrap()).unwrap();
+pub fn zstd_decode(data: &mut Zval) -> PhpResult<Zval> {
+    if !data.is_string() {
+        return Err(invalid_argument_error(1, "string"));
+    }
+    let input_bytes = data
+        .binary_slice()
+        .expect("could not retrieve bytes of argument 1");
+
+    let val = zstd_decode_inner(input_bytes).map_err(|e| format!("Error decoding data: {}", e))?;
+    Ok(val)
+}
+
+fn zstd_decode_inner(data: &[u8]) -> Result<Zval> {
+    let mut decoder = Decoder::new(data)?;
     let mut output = Vec::new();
-    decoder.read_to_end(&mut output).unwrap();
+
+    decoder.read_to_end(&mut output)?;
+
     let mut val = Zval::new();
     val.set_binary(output);
 
-    val
+    Ok(val)
+}
+
+fn invalid_argument_error(pos: u8, kind: &str) -> PhpException {
+    let class = ClassEntry::try_find("InvalidArgumentException").unwrap();
+    PhpException::new(format!("Argument {} must be a {}", pos, kind), 0, class)
 }
 
 #[php_function(name = "Shopware\\Extension\\uuidv7")]
