@@ -9,7 +9,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
+  linux_amd64:
     strategy:
       fail-fast: false
       matrix:
@@ -20,6 +20,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+
       - name: Set up cargo cache
         uses: actions/cache@v3
         continue-on-error: false
@@ -32,15 +33,20 @@ jobs:
             target/
           key: ${{ runner.os }}-cargo-${{ matrix.php-version }}-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: ${{ runner.os }}-cargo-
+
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php-version }}
+
       - name: Build
         run: cargo build --release
+
+      - name: Rename
+        run: mv target/release/libext_sw.so shopware-linux-amd64-${{ matrix.php-version }}.so
         
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
-          name: ext-linux-${{ matrix.php-version }}
-          path: target/release/libext_sw.so
+          name: shopware-linux-amd64-${{ matrix.php-version }}
+          path: shopware-linux-amd64-${{ matrix.php-version }}.so
