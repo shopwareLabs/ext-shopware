@@ -1,0 +1,5 @@
+{
+    "runner.php_config": {
+        "extension": "./target/release/libext_shopware.dylib"
+    }
+}

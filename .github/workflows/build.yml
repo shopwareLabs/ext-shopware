@@ -1,0 +1,38 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v6
+
+      - name: Install Vips
+        run: |
+          set -e
+          sudo apt-get update
+          sudo apt-get install -y libvips-dev
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+
+      - name: Setup Rust
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install Composer Dependencies
+        run: composer install
+
+      - name: Run Tests
+        run: make test

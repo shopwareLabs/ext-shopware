@@ -1,0 +1,5 @@
+/target
+.phpunit.result.cache
+/vendor
+test_image.jpg
+benchmarks/*.jpg

@@ -1,0 +1,16 @@
+[package]
+name = "ext-shopware"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+ext-php-rs = "*"
+rquickjs = { version = "0.9", features = ["bindgen", "classes", "properties", "parallel"] }
+lightningcss = "1.0.0-alpha.68"
+libvips = "1.7.1"
+
+[profile.release]
+strip = "debuginfo"
