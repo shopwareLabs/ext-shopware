@@ -6,7 +6,8 @@ ARG PHP_VERSION=8.4
 ARG BASE_IMAGE=bookworm
 
 # Rust builder stage - use official Rust image
-FROM rust:latest AS rust-builder
+# Using 1.92+ to support Rust edition 2024
+FROM rust:1.92 AS rust-builder
 
 # PHP builder stage with Rust from rust-builder
 FROM php:${PHP_VERSION}-cli-${BASE_IMAGE} AS builder
