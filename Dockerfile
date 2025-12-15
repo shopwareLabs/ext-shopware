@@ -3,18 +3,30 @@
 # Can be based on either Alpine (musl) or Debian (glibc)
 
 ARG PHP_VERSION=8.4
-ARG BASE_IMAGE=debian
+ARG BASE_IMAGE=bookworm
 
-# Use multi-stage build for efficiency
-FROM php:${PHP_VERSION}-cli-${BASE_IMAGE} as builder
+# Rust builder stage - use official Rust image
+FROM rust:latest AS rust-builder
+
+# PHP builder stage with Rust from rust-builder
+FROM php:${PHP_VERSION}-cli-${BASE_IMAGE} AS builder
+
+ARG BASE_IMAGE=bookworm
+
+# Copy Rust toolchain from rust-builder stage
+COPY --from=rust-builder /usr/local/cargo /usr/local/cargo
+COPY --from=rust-builder /usr/local/rustup /usr/local/rustup
+
+ENV CARGO_HOME=/usr/local/cargo \
+    RUSTUP_HOME=/usr/local/rustup \
+    PATH=/usr/local/cargo/bin:$PATH
 
 # Install system dependencies based on the base image
-RUN if [ "$BASE_IMAGE" = "alpine" ]; then \
+RUN if echo "$BASE_IMAGE" | grep -q "alpine"; then \
         apk add --no-cache \
             build-base \
             vips-dev \
             pkgconfig \
-            curl \
             git; \
     else \
         apt-get update && \
@@ -22,15 +34,13 @@ RUN if [ "$BASE_IMAGE" = "alpine" ]; then \
             build-essential \
             libvips-dev \
             pkg-config \
-            curl \
             git \
             ca-certificates && \
         rm -rf /var/lib/apt/lists/*; \
     fi
 
-# Install Rust
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
-ENV PATH="/root/.cargo/bin:${PATH}"
+# Verify Rust installation
+RUN cargo --version && rustc --version
 
 # Set working directory
 WORKDIR /build
@@ -45,10 +55,10 @@ RUN cargo build --release
 # Runtime stage (optional, for testing)
 FROM php:${PHP_VERSION}-cli-${BASE_IMAGE}
 
-ARG BASE_IMAGE=debian
+ARG BASE_IMAGE=bookworm
 
 # Install runtime dependencies
-RUN if [ "$BASE_IMAGE" = "alpine" ]; then \
+RUN if echo "$BASE_IMAGE" | grep -q "alpine"; then \
         apk add --no-cache vips; \
     else \
         apt-get update && \
