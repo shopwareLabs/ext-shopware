@@ -6,14 +6,12 @@ FROM php:${PHP_VERSION}-cli-${DEBIAN_RELEASE} AS builder
 
 # Install build dependencies
 # clang/llvm is required for bindgen
-# libvips-dev is required for the extension
 RUN apt-get update && apt-get install -y \
     build-essential \
     curl \
     git \
     clang \
     libclang-dev \
-    libvips-dev \
     pkg-config \
     libssl-dev \
     && rm -rf /var/lib/apt/lists/*

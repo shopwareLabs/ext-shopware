@@ -10,7 +10,7 @@ crate-type = ["cdylib"]
 ext-php-rs = "*"
 rquickjs = { version = "0.9", features = ["bindgen", "classes", "properties", "parallel"] }
 lightningcss = "1.0.0-alpha.68"
-libvips = "1.7.1"
+
 
 [profile.release]
 strip = "debuginfo"
