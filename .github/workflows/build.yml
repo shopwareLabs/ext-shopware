@@ -1,38 +1,52 @@
-name: Build
+name: Build Extension
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
   pull_request:
-    branches: [main]
-
-env:
-  CARGO_TERM_COLOR: always
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    name: Build PHP ${{ matrix.php-version }} (${{ matrix.type }} - ${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ["8.1", "8.2", "8.3", "8.4"]
+        type: ["gnu", "musl"]
+        arch: ["x86_64", "aarch64"]
+        include:
+          - arch: x86_64
+            runner: ubuntu-latest
+          - arch: aarch64
+            runner: ubuntu-24.04-arm
 
     steps:
-      - name: Clone repository
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
-      - name: Install Vips
+      # Docker setup isn't strictly necessary for native builds but good practice
+      # If using native runners, docker works out of the box.
+
+      - name: Build Docker Image
         run: |
-          set -e
-          sudo apt-get update
-          sudo apt-get install -y libvips-dev
+          ARGS="--build-arg PHP_VERSION=${{ matrix.php-version }}"
+          if [ "${{ matrix.type }}" = "gnu" ]; then
+            ARGS="$ARGS --build-arg DEBIAN_RELEASE=bullseye"
+          fi
+          
+          docker build \
+            --file Dockerfile.${{ matrix.type }} \
+            $ARGS \
+            --output type=local,dest=output \
+            .
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+      - name: Rename Artifact
+        run: |
+          mv output/libext_shopware.so output/shopware-php-${{ matrix.php-version }}-${{ matrix.type }}-${{ matrix.arch }}.so
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
         with:
-          php-version: '8.4'
-
-      - name: Setup Rust
-        uses: Swatinem/rust-cache@v2
-
-      - name: Install Composer Dependencies
-        run: composer install
-
-      - name: Run Tests
-        run: make test
+          name: shopware-php-${{ matrix.php-version }}-${{ matrix.type }}-${{ matrix.arch }}.so
+          path: output/shopware-php-${{ matrix.php-version }}-${{ matrix.type }}-${{ matrix.arch }}.so

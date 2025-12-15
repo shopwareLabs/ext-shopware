@@ -1,0 +1,54 @@
+# ARG for PHP version, default to 8.3
+ARG PHP_VERSION=8.3
+
+FROM php:${PHP_VERSION}-cli-alpine AS builder
+
+# Install build dependencies
+# clang/llvm is required for bindgen
+# vips-dev is required for the extension
+# build-base for compilation
+RUN apk add --no-cache \
+    build-base \
+    curl \
+    git \
+    clang \
+    llvm-dev \
+    clang-libclang \
+    vips-dev \
+    openssl-dev \
+    pkgconf
+
+# Install Rust
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+# Force dynamic linking for cdylib on musl
+ENV RUSTFLAGS="-C target-feature=-crt-static"
+
+# Set Clang environment variables for bindgen execution
+ENV LIBCLANG_PATH=/usr/lib
+
+WORKDIR /app
+
+# Copy Cargo files first to cache dependencies
+COPY Cargo.toml Cargo.lock ./
+
+# Create a dummy lib.rs to build dependencies and cache them
+RUN mkdir src && echo "fn main() {}" > src/lib.rs && \
+    cargo build --release && \
+    rm -rf src target/release/deps/ext_shopware*
+
+# Copy the actual source code
+COPY . .
+
+# Build the extension
+RUN touch src/lib.rs && cargo build --release
+
+# Verify it loads
+# Note: On Alpine, you might need to ensure runtime deps are present to run php -m
+# but for building the .so it should be fine.
+RUN php -dextension=target/release/libext_shopware.so -m | grep ext-shopware
+
+# Output stage
+FROM scratch AS export
+COPY --from=builder /app/target/release/libext_shopware.so /
