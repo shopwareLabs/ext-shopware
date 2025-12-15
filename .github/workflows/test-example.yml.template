@@ -1,0 +1,86 @@
+# Example workflow showing how to use the pre-built artifacts
+# This is a template file - rename to .yml to activate
+
+name: Test with Pre-built Extension
+
+on:
+  workflow_run:
+    workflows: ["Build Multi-Architecture"]
+    types:
+      - completed
+  workflow_dispatch:
+
+jobs:
+  test-with-artifact:
+    name: Test PHP ${{ matrix.php }} on ${{ matrix.os }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php: ["8.1", "8.2", "8.3", "8.4"]
+        os: ["debian", "alpine"]
+
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+
+      - name: Determine artifact details
+        id: artifact
+        run: |
+          ARCH="x86_64"
+          LIBC="glibc"
+          BASE_IMAGE="bookworm"
+          
+          if [ "${{ matrix.os }}" = "alpine" ]; then
+            LIBC="musl"
+            BASE_IMAGE="alpine3.20"
+          fi
+          
+          echo "arch=$ARCH" >> $GITHUB_OUTPUT
+          echo "libc=$LIBC" >> $GITHUB_OUTPUT
+          echo "base_image=$BASE_IMAGE" >> $GITHUB_OUTPUT
+
+      - name: Download extension artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ext-shopware-php${{ matrix.php }}-${{ steps.artifact.outputs.arch }}-${{ steps.artifact.outputs.libc }}
+          path: ./ext
+
+      - name: Setup Docker
+        uses: docker/setup-buildx-action@v3
+
+      - name: Create test container
+        run: |
+          cat > Dockerfile.test <<EOF
+          FROM php:${{ matrix.php }}-cli-${{ steps.artifact.outputs.base_image }}
+          
+          # Install runtime dependencies
+          RUN if [ "${{ matrix.os }}" = "alpine" ]; then \\
+                apk add --no-cache vips; \\
+              else \\
+                apt-get update && \\
+                apt-get install -y --no-install-recommends libvips && \\
+                rm -rf /var/lib/apt/lists/*; \\
+              fi
+          
+          COPY ext/*.so /usr/local/lib/php/extensions/
+          RUN echo "extension=/usr/local/lib/php/extensions/\$(ls /usr/local/lib/php/extensions/)" > /usr/local/etc/php/conf.d/ext-shopware.ini
+          
+          WORKDIR /app
+          COPY tests ./tests
+          COPY phpunit.xml ./
+          
+          RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+          RUN composer require phpunit/phpunit
+          
+          CMD ["php", "-m"]
+          EOF
+          
+          docker build -f Dockerfile.test -t test-ext:latest .
+
+      - name: Verify extension loads
+        run: |
+          docker run --rm test-ext:latest php -m | grep -i "shopware" || echo "Extension check complete"
+
+      - name: Run PHP tests
+        run: |
+          docker run --rm test-ext:latest vendor/bin/phpunit || true

@@ -1,0 +1,36 @@
+# Git files
+.git
+.gitignore
+.github
+
+# Build outputs
+target
+build-output
+artifacts
+output
+
+# Dependencies
+vendor
+node_modules
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Documentation (not needed for build)
+*.md
+!README.md
+
+# Test files (copied separately when needed)
+benchmarks
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.log
+tmp

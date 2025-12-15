@@ -28,6 +28,8 @@ sudo apt-get install libvips-dev pkg-config
 
 ## Building
 
+### Local Development
+
 ```bash
 # Install dependencies
 composer install
@@ -37,6 +39,23 @@ make build
 
 # Build debug version
 make build-debug
+```
+
+### Multi-Architecture Builds with Docker
+
+For building across multiple architectures and PHP versions, see [BUILD.md](BUILD.md) for detailed instructions on:
+- Building for x86_64 and arm64 architectures
+- Building for PHP 8.1, 8.2, 8.3, and 8.4
+- Building for musl (Alpine) and glibc (Debian) based systems
+- Using Docker for local testing
+
+Quick start:
+```bash
+# Build for PHP 8.4 on Debian x86_64
+./build-local.sh 8.4 bookworm x86_64
+
+# Build for PHP 8.3 on Alpine arm64
+./build-local.sh 8.3 alpine3.20 arm64
 ```
 
 ## Running Tests

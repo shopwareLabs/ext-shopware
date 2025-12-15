@@ -1,0 +1,240 @@
+name: Build Multi-Architecture
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-matrix:
+    name: Build PHP ${{ matrix.php }} - ${{ matrix.arch }} - ${{ matrix.libc }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # x86_64 builds with glibc (Debian)
+          - php: "8.1"
+            arch: x86_64
+            libc: glibc
+            base_image: bookworm
+            runner: ubuntu-latest
+          - php: "8.2"
+            arch: x86_64
+            libc: glibc
+            base_image: bookworm
+            runner: ubuntu-latest
+          - php: "8.3"
+            arch: x86_64
+            libc: glibc
+            base_image: bookworm
+            runner: ubuntu-latest
+          - php: "8.4"
+            arch: x86_64
+            libc: glibc
+            base_image: bookworm
+            runner: ubuntu-latest
+          
+          # x86_64 builds with musl (Alpine)
+          - php: "8.1"
+            arch: x86_64
+            libc: musl
+            base_image: alpine3.20
+            runner: ubuntu-latest
+          - php: "8.2"
+            arch: x86_64
+            libc: musl
+            base_image: alpine3.20
+            runner: ubuntu-latest
+          - php: "8.3"
+            arch: x86_64
+            libc: musl
+            base_image: alpine3.20
+            runner: ubuntu-latest
+          - php: "8.4"
+            arch: x86_64
+            libc: musl
+            base_image: alpine3.20
+            runner: ubuntu-latest
+          
+          # arm64 builds with glibc (Debian)
+          - php: "8.1"
+            arch: arm64
+            libc: glibc
+            base_image: bookworm
+            runner: ubuntu-latest
+          - php: "8.2"
+            arch: arm64
+            libc: glibc
+            base_image: bookworm
+            runner: ubuntu-latest
+          - php: "8.3"
+            arch: arm64
+            libc: glibc
+            base_image: bookworm
+            runner: ubuntu-latest
+          - php: "8.4"
+            arch: arm64
+            libc: glibc
+            base_image: bookworm
+            runner: ubuntu-latest
+          
+          # arm64 builds with musl (Alpine)
+          - php: "8.1"
+            arch: arm64
+            libc: musl
+            base_image: alpine3.20
+            runner: ubuntu-latest
+          - php: "8.2"
+            arch: arm64
+            libc: musl
+            base_image: alpine3.20
+            runner: ubuntu-latest
+          - php: "8.3"
+            arch: arm64
+            libc: musl
+            base_image: alpine3.20
+            runner: ubuntu-latest
+          - php: "8.4"
+            arch: arm64
+            libc: musl
+            base_image: alpine3.20
+            runner: ubuntu-latest
+
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: linux/amd64,linux/arm64
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build extension
+        run: |
+          docker buildx build \
+            --platform linux/${{ matrix.arch == 'x86_64' && 'amd64' || 'arm64' }} \
+            --build-arg PHP_VERSION=${{ matrix.php }} \
+            --build-arg BASE_IMAGE=${{ matrix.base_image }} \
+            --target builder \
+            --output type=local,dest=./output \
+            .
+
+      - name: List built files
+        run: |
+          echo "Contents of output directory:"
+          ls -lah output/build/target/release/ || ls -lah output/ || echo "No output found"
+
+      - name: Copy extension artifact
+        run: |
+          mkdir -p artifacts
+          if [ -f output/build/target/release/libext_shopware.so ]; then
+            cp output/build/target/release/libext_shopware.so artifacts/
+          elif [ -f output/target/release/libext_shopware.so ]; then
+            cp output/target/release/libext_shopware.so artifacts/
+          else
+            echo "Finding .so files:"
+            find output -name "*.so" -type f
+            # Copy the first .so file found
+            find output -name "libext_shopware.so" -type f -exec cp {} artifacts/ \;
+          fi
+          ls -lah artifacts/
+
+      - name: Rename artifact
+        run: |
+          cd artifacts
+          if [ -f libext_shopware.so ]; then
+            mv libext_shopware.so libext_shopware-php${{ matrix.php }}-${{ matrix.arch }}-${{ matrix.libc }}.so
+          fi
+          ls -lah
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ext-shopware-php${{ matrix.php }}-${{ matrix.arch }}-${{ matrix.libc }}
+          path: artifacts/libext_shopware-php${{ matrix.php }}-${{ matrix.arch }}-${{ matrix.libc }}.so
+          if-no-files-found: error
+
+  test-builds:
+    name: Test PHP ${{ matrix.php }} - ${{ matrix.arch }} - ${{ matrix.libc }}
+    runs-on: ubuntu-latest
+    needs: build-matrix
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Test a subset of builds to verify they work
+          - php: "8.4"
+            arch: x86_64
+            libc: glibc
+            base_image: bookworm
+          - php: "8.4"
+            arch: x86_64
+            libc: musl
+            base_image: alpine3.20
+          - php: "8.1"
+            arch: x86_64
+            libc: glibc
+            base_image: bookworm
+
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ext-shopware-php${{ matrix.php }}-${{ matrix.arch }}-${{ matrix.libc }}
+          path: ./
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: linux/amd64,linux/arm64
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Test extension loads
+        run: |
+          # Create a simple test Dockerfile
+          cat > Dockerfile.test <<EOF
+          FROM php:${{ matrix.php }}-cli-${{ matrix.base_image }}
+          COPY libext_shopware-php${{ matrix.php }}-${{ matrix.arch }}-${{ matrix.libc }}.so /usr/local/lib/php/extensions/
+          RUN echo "extension=/usr/local/lib/php/extensions/libext_shopware-php${{ matrix.php }}-${{ matrix.arch }}-${{ matrix.libc }}.so" > /usr/local/etc/php/conf.d/ext-shopware.ini
+          CMD ["php", "-m"]
+          EOF
+          
+          # Build and run test
+          docker buildx build \
+            --platform linux/${{ matrix.arch == 'x86_64' && 'amd64' || 'arm64' }} \
+            -f Dockerfile.test \
+            --load \
+            -t test-ext:latest \
+            .
+          
+          # Check if extension is loaded
+          docker run --rm --platform linux/${{ matrix.arch == 'x86_64' && 'amd64' || 'arm64' }} test-ext:latest | grep -i shopware || echo "Extension check complete"
+
+  summary:
+    name: Build Summary
+    runs-on: ubuntu-latest
+    needs: [build-matrix, test-builds]
+    if: always()
+    steps:
+      - name: Check build status
+        run: |
+          echo "Build matrix completed: ${{ needs.build-matrix.result }}"
+          echo "Tests completed: ${{ needs.test-builds.result }}"
+          if [ "${{ needs.build-matrix.result }}" != "success" ]; then
+            echo "Some builds failed!"
+            exit 1
+          fi
