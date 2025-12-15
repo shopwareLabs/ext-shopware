@@ -6,6 +6,15 @@ A high-performance PHP extension written in Rust, providing bindings for:
 - **LightningCSS** - Fast CSS parser, transformer, and minifier
 - **libvips** - Fast image processing library
 
+## Pre-built Binaries
+
+Pre-built binaries are automatically generated for:
+- **Architectures**: x86_64 (amd64), arm64
+- **PHP Versions**: 8.1, 8.2, 8.3, 8.4
+- **Systems**: Alpine Linux (musl libc), Debian/Ubuntu (glibc)
+
+Check the [GitHub Actions artifacts](../../actions/workflows/build-multi-arch.yml) for the latest builds.
+
 ## Requirements
 
 - PHP 8.1+

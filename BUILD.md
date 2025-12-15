@@ -171,6 +171,20 @@ docker buildx ls
 
 Ensure the base image includes libvips development files. Both Debian and Alpine variants in the Dockerfile install the necessary dependencies.
 
+### SSL certificate errors in Docker
+
+If you encounter SSL certificate errors when building in Docker (e.g., in corporate environments with SSL inspection):
+
+```
+SSL certificate problem: self-signed certificate in certificate chain
+```
+
+This is typically caused by corporate SSL interceptors or security scanners. The Dockerfile uses multi-stage builds with the official Rust image which should work in most environments. If you still encounter issues:
+
+1. Ensure your Docker daemon has access to the internet without SSL inspection
+2. Use GitHub Actions instead - the automated builds will work correctly there
+3. Configure your corporate proxy/CA certificates in the Docker build if needed
+
 ## Development
 
 For local development without Docker:
