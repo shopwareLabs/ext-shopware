@@ -4,26 +4,26 @@ A high-performance PHP extension written in Rust, providing bindings for:
 
 - **QuickJS** - Fast JavaScript engine for executing JS from PHP
 - **LightningCSS** - Fast CSS parser, transformer, and minifier
-- **libvips** - Fast image processing library
+
 
 ## Requirements
 
 - PHP 8.1+
 - Rust (latest stable)
 - System dependencies:
-  - libvips (for image processing)
+
   - pkg-config
 
 ### macOS
 
 ```bash
-brew install vips pkg-config
+brew install pkg-config
 ```
 
 ### Ubuntu/Debian
 
 ```bash
-sudo apt-get install libvips-dev pkg-config
+sudo apt-get install pkg-config
 ```
 
 ## Building
@@ -164,56 +164,7 @@ $css->setBrowserTargets([
 $transformed = $css->transform('.test { user-select: none; }');
 ```
 
-### Image - Image Processing
 
-Fast image processing powered by libvips.
-
-```php
-use Shopware\PHPExtension\Image\Image;
-
-// Check supported formats
-$formats = Image::getSupportedFormats();
-// Returns: ['jpeg' => true, 'png' => true, 'webp' => true, 'jxl' => true, 'avif' => false, ...]
-
-if (Image::supportsFormat('avif')) {
-    // AVIF is supported
-}
-
-// Load image from file
-$img = Image::fromFile('/path/to/image.jpg');
-
-// Load image from string/buffer
-$data = file_get_contents('/path/to/image.jpg');
-$img = Image::fromString($data);
-
-// Get dimensions
-$dimensions = $img->getDimension();
-// Returns: ['width' => 800, 'height' => 600]
-
-// Resize image (maintains aspect ratio)
-$resized = $img->resize(400, 300);
-
-// Save to file
-$img->saveFile('/path/to/output.jpg');
-
-// Save with specific format
-$img->saveFile('/path/to/output.webp', 'webp');
-
-// Save with quality setting (1-100)
-$img->saveFile('/path/to/output.jpg', 'jpeg', 85);
-
-// Save to string/buffer
-$buffer = $img->saveString('png');
-$buffer = $img->saveString('jpeg', 90);
-
-// Format constants
-Image::FORMAT_JPEG; // 'jpeg'
-Image::FORMAT_PNG;  // 'png'
-Image::FORMAT_WEBP; // 'webp'
-Image::FORMAT_TIFF; // 'tiff'
-Image::FORMAT_JXL;  // 'jxl'
-Image::FORMAT_AVIF; // 'avif'
-```
 
 ## License
 
