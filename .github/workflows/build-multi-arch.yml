@@ -14,6 +14,8 @@ jobs:
   build-matrix:
     name: Build PHP ${{ matrix.php }} - ${{ matrix.arch }} - ${{ matrix.libc }}
     runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -167,6 +169,8 @@ jobs:
     name: Test PHP ${{ matrix.php }} - ${{ matrix.arch }} - ${{ matrix.libc }}
     runs-on: ubuntu-latest
     needs: build-matrix
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -228,6 +232,8 @@ jobs:
     name: Build Summary
     runs-on: ubuntu-latest
     needs: [build-matrix, test-builds]
+    permissions:
+      contents: read
     if: always()
     steps:
       - name: Check build status
