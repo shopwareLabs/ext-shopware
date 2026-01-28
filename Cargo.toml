@@ -7,8 +7,8 @@ edition = "2024"
 crate-type = ["cdylib"]
 
 [dependencies]
-ext-php-rs = "*"
-rquickjs = { version = "0.9", features = ["bindgen", "classes", "properties", "parallel"] }
+ext-php-rs = "0.15.5"
+rquickjs = { version = "0.11", features = ["classes", "properties", "parallel"] }
 lightningcss = "1.0.0-alpha.68"
 
 
